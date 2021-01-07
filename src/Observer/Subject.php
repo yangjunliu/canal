@@ -21,15 +21,18 @@ class Subject
      * 自动加载canal观察者类匹配key
      * @var string
      */
-    protected $autoLoadClassKey;
+    protected $autoLoadNamespace;
 
     /**
      * @var array BinlogObserver
      */
     private $obs = array();
 
-    public function __construct()
+
+    public function __construct(string $autoLoadPath, string $autoLoadNamespace)
     {
+        $this->autoLoadPath = $autoLoadPath;
+        $this->autoLoadNamespace = $autoLoadNamespace;
         $this->init();
     }
 
@@ -38,8 +41,9 @@ class Subject
      */
     protected function init()
     {
-        $this->autoLoadClassKey = 'CanalObserver';
-        $this->autoLoadPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . $this->autoLoadClassKey;
+        if (empty($this->autoLoadPath) || empty($this->autoLoadNamespace)) {
+            throw new \Exception('canal autoloader path is empty.');
+        }
         $this->autoLoadObserver();
     }
 
@@ -55,7 +59,7 @@ class Subject
         }
 
         foreach (get_declared_classes() as $class) {
-            if (strstr($class, $this->autoLoadClassKey)) {
+            if (strstr($class, $this->autoLoadNamespace)) {
                 // 反射实例化类
                 $class = new \ReflectionClass($class);
                 $obsObj = $class->newInstance();
@@ -130,27 +134,33 @@ class Subject
     {
         /** @var BinlogObserver $ob */
         foreach ($this->obs as $ob) {
+            // 匹配时间类型
+            if (empty($ob->getEventType())) {
+                throw new \Exception('canal event type is empty!');
+            }
+            if (!in_array($eventType, $ob->getEventType())) {
+                continue;
+            }
+
             // 匹配数据库名称
-            if (!empty($ob->getSchema()) && (strcmp($schemaName, $ob->getSchema()) == 0)
-                && !empty($ob->getTable()) && (strcmp($tableName, $ob->getTable()) == 0)
-                && (empty($ob->getEventType()) || in_array($eventType, $ob->getEventType()))) {
+            if (empty($ob->getSchema())) {
                 $ob->handle($rowData);
+                continue;
+            }
+            if ((strcmp($schemaName, $ob->getSchema()) != 0)) {
                 continue;
             }
 
-            if (!empty($ob->getSchema()) && (strcmp($schemaName, $ob->getSchema()) == 0)
-                && !empty($ob->getEventType()) && in_array($eventType, $ob->getEventType())
-                && (empty($ob->getTable()) || (strcmp($tableName, $ob->getTable()) == 0))) {
+            // 匹配表明
+            if (empty($ob->getTable())) {
                 $ob->handle($rowData);
+                continue;
+            }
+            if ((strcmp($tableName, $ob->getTable()) != 0)) {
                 continue;
             }
 
-            if (!empty($ob->getTable()) && (strcmp($tableName, $ob->getTable()) == 0)
-                && !empty($ob->getEventType()) && in_array($eventType, $ob->getEventType())
-                && (empty($ob->getSchema()) || (strcmp($schemaName, $ob->getSchema()) == 0))) {
-                $ob->handle($rowData);
-                continue;
-            }
+            $ob->handle($rowData);
         }
     }
 }

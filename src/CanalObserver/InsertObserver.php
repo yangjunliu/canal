@@ -15,11 +15,11 @@ class InsertObserver extends BinlogObserver
     {
         // 绑定通知事件
 //        $this->setEventType([EventType::INSERT, EventType::DELETE, EventType::UPDATE]);
-        $this->setEventType([EventType::INSERT]);
+        $this->setEventType([EventType::INSERT, EventType::DELETE]);
         // 绑定数据库名称
         $this->setSchema('my_test');
         // 绑定表名称
-        $this->setTable('test_canal');
+        //$this->setTable('');
     }
 
     /**

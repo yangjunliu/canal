@@ -7,7 +7,10 @@ use YangjunLiu\Canal\Observer\Subject;
 
 require_once './vendor/autoload.php';
 
-$subject = new Subject();
+$autoloaderPath = __DIR__ . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'CanalObserver';
+$autoloaderNamespace = 'YangjunLiu\Canal\CanalObserver';
+
+$subject = new Subject($autoloaderPath, $autoloaderNamespace);
 $subject->deamainSevice();
 
 
